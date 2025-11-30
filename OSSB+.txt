@@ -1,0 +1,257 @@
+#Implementation Code OSSB
+
+import numpy as np
+import pandas as pd
+from river import tree, drift
+from sklearn.preprocessing import StandardScaler
+import matplotlib.pyplot as plt
+
+# --- Set random seeds for reproducibility ---(for example in Label Availability)
+#np.random.seed(42)  # Optional 
+
+# --- Parameters ---
+W_size = 200                  # Larger window for stability
+#R_size = 200                  # Match reference window
+M = 10                        # Keep 10 base models
+p_value_threshold = 0.9      # Balanced confidence
+gamma = 0.5                   # Adjusted for feature dimensions
+k_neighbors = 10              # More neighbors for multiple classes
+initial_batch_size = 100      # Sufficient cold-start data
+label_percentage = 0.05     # 5% labels (simulated partial labeling)
+lambda_val = 2.0              # Initial learning rate
+drift_delta = 0.001           # Drift detection sensitivity
+
+# --- Initialize Windows ---
+W = []   # Sliding window: stores (x, y, p_value)
+#Ref = [] # Reference window: stores removed samples
+
+# --- Initialize Models ---
+base_models = [tree.HoeffdingTreeClassifier() for _ in range(M)]
+lambda_m_sc = np.zeros(M)     # Sum weights (correct predictions)
+lambda_m_sw = np.zeros(M)     # Sum weights (incorrect predictions)
+epsilon_m = np.zeros(M)       # Error rates
+model_age = np.zeros(M)       # Track model lifetime in ensemble
+
+# --- Load and Prepare Data ---
+
+data_path = "path/dataset.csv" 
+data = pd.read_csv(data_path)
+n_features = data.shape[1] - 1  # Assuming last column is target
+
+# --- Initialize Drift Detectors ---
+adwin_error = drift.ADWIN(delta=drift_delta)
+#adwin_feature = [drift.ADWIN(delta=drift_delta) for _ in range(n_features)]
+
+# --- Normalize Features ---
+scaler = StandardScaler()
+initial_data = data.iloc[:initial_batch_size]
+X_initial = scaler.fit_transform(initial_data.iloc[:, :-1].values)
+y_initial = initial_data.iloc[:, -1].values
+classes = np.unique(y_initial)
+
+# --- Cold Start Initialization ---
+for x, y in zip(X_initial, y_initial):
+    W.append((x, y, 1.0))  # p_value=1.0 for labeled data
+    x_dict = dict(zip(range(len(x)), x))
+    for m in range(M):
+        base_models[m].learn_one(x_dict, y)
+
+# --- Helper Functions ---
+def calculate_similarity(x_u, x_i, gamma=1.0):
+    """Calculate RBF similarity between samples."""
+    distance_sq = np.linalg.norm(x_u - x_i) ** 2
+    return np.exp(-gamma * distance_sq)
+
+class ICP:
+    """Inductive Conformal Prediction for pseudo-labeling"""
+    def __init__(self, base_model, calibration_set):
+        self.base_model = base_model
+        self.calibration_set = calibration_set
+        self.non_conformity_scores = self._compute_scores()
+    
+    def _compute_scores(self):
+        X_cal, y_cal = self.calibration_set
+        scores = []
+        for x, y in zip(X_cal, y_cal):
+            x_dict = dict(zip(range(len(x)), x))
+            probas = self.base_model.predict_proba_one(x_dict)
+            p_y = probas.get(y, 0.0)
+            scores.append(1 - p_y)
+        return np.array(scores)
+    
+    def compute_p_value(self, x_u, y_candidate):
+        x_dict = dict(zip(range(len(x_u)), x_u))
+        probas = self.base_model.predict_proba_one(x_dict)
+        p_y = probas.get(y_candidate, 0.0)
+        alpha_u = 1 - p_y
+        return np.mean(self.non_conformity_scores >= alpha_u)
+
+def conservative_pseudo_label(x_u, W, icp, class_labels, k=k_neighbors, gamma=1.0):
+    """Only assign labels with strong consensus"""
+    if len(W) < 10:
+        return None, 0.0
+
+    similarities = [calculate_similarity(x_u, w[0], gamma) for w in W[-50:]]
+    nearest_indices = np.argsort(similarities)[-k:]
+    nearest_labels = [W[i][1] for i in nearest_indices]
+
+    unique, counts = np.unique(nearest_labels, return_counts=True)
+    majority_label = unique[np.argmax(counts)]
+    if counts.max() < 0.7 * k:
+        return None, 0.0
+
+    p_value = icp.compute_p_value(x_u, majority_label)
+    return (majority_label, p_value) if p_value >= p_value_threshold else (None, 0.0)
+
+def weighted_ensemble_predict(X, models, epsilon_m, classes):
+    """Weighted prediction using model confidence"""
+    if len(models) == 0:
+        return np.full(len(X), classes[0])
+    
+    weighted_votes = np.zeros((len(X), len(classes)))
+    for m, model in enumerate(models):
+        try:
+            weight = np.log((1 - epsilon_m[m]) / max(epsilon_m[m], 1e-10))
+            for i, x in enumerate(X):
+                x_dict = dict(zip(range(len(x)), x))
+                probas = model.predict_proba_one(x_dict)
+                for cls, prob in probas.items():
+                    cls_idx = np.where(classes == cls)[0][0]
+                    weighted_votes[i, cls_idx] += weight * prob
+        except Exception:
+            continue
+    return classes[np.argmax(weighted_votes, axis=1)]
+
+# --- Main Online Learning Loop ---
+all_true = []
+all_pred = []
+drift_points = []
+cumulative_accuracy = []
+
+for i in range(initial_batch_size, len(data)):
+    try:
+        x = scaler.transform([data.iloc[i, :-1].values])[0]
+        y_true = data.iloc[i, -1]
+        
+        # Simulate partial labeling
+        if np.random.rand() > label_percentage:
+            y_true = np.nan
+            
+        x_dict = dict(zip(range(len(x)), x))
+        
+        # --- Evaluation ---
+        if not np.isnan(y_true):
+            y_pred = weighted_ensemble_predict([x], base_models, epsilon_m, classes)[0]
+            all_true.append(y_true)
+            all_pred.append(y_pred)
+            
+            # Track accuracy
+            current_acc = np.mean(np.array(all_pred) == np.array(all_true))
+            cumulative_accuracy.append(current_acc)
+            
+            # Concept drift detection
+            error = 0 if y_pred == y_true else 1
+            adwin_error.update(error)
+            if adwin_error.drift_detected:
+                print(f"Drift detected at sample {i}")
+                drift_points.append(i)
+                
+                # Remove 2 worst models (maintain order)
+                worst_indices = np.argsort(epsilon_m)[-2:]
+                base_models = [m for idx, m in enumerate(base_models) if idx not in worst_indices]
+                epsilon_m = np.delete(epsilon_m, worst_indices)
+                lambda_m_sc = np.delete(lambda_m_sc, worst_indices)
+                lambda_m_sw = np.delete(lambda_m_sw, worst_indices)
+                model_age = np.delete(model_age, worst_indices)
+                
+                # Add new models TO THE END
+                base_models.extend([tree.HoeffdingTreeClassifier() for _ in range(2)])
+                epsilon_m = np.append(epsilon_m, [0.5, 0.5])
+                lambda_m_sc = np.append(lambda_m_sc, [0, 0])
+                lambda_m_sw = np.append(lambda_m_sw, [0, 0])
+                model_age = np.append(model_age, [0, 0])
+                
+                adwin_error = drift.ADWIN(delta=drift_delta)
+        
+        # --- Pseudo-labeling ---
+        if np.isnan(y_true):
+            X_cal = np.array([w[0] for w in W])
+            y_cal = np.array([w[1] for w in W])
+            if len(X_cal) > 10 and len(np.unique(y_cal)) > 1:
+                icp = ICP(base_models[0], (X_cal, y_cal))
+                y, p_value = conservative_pseudo_label(x, W, icp, np.unique(y_cal))
+                if y is None:
+                    continue
+            else:
+                continue
+        else:
+            y, p_value = y_true, 1.0
+
+        # --- Window Management ---
+        W.append((x, y, p_value))
+        if len(W) > W_size:
+            removed = W.pop(0)
+          #  if len(Ref) < R_size:
+          #      Ref.append(removed)
+
+        # --- Feature Drift Detection ---
+       # for feature_idx in range(len(x)):
+        #    adwin_feature[feature_idx].update(x[feature_idx])
+        #    if adwin_feature[feature_idx].drift_detected:
+        #        print(f"Feature {feature_idx} drift at sample {i}")
+
+        # --- AdaBoost-style Model Updates ---
+        lambda_val = 1.0  # Reset for new example
+        
+        for m in range(len(base_models)):
+            # Update frequency based on lambda
+            k = np.random.poisson(max(0.5, min(lambda_val, 10)))
+            
+            # Train model k times
+            for _ in range(int(k)):
+                base_models[m].learn_one(x_dict, y)
+            
+            model_age[m] += 1
+            
+            # Get prediction and update weights
+            y_pred_m = base_models[m].predict_one(x_dict)
+            
+            if y_pred_m == y:
+                lambda_m_sc[m] += lambda_val
+                # Reduce focus for subsequent models
+                lambda_val *= 1 / (2 * (1 - epsilon_m[m] + 1e-10))
+            else:
+                lambda_m_sw[m] += lambda_val
+                # Increase focus for subsequent models
+                lambda_val *= 1 / (2 * (epsilon_m[m] + 1e-10))
+            
+            # Update error rate and clip lambda
+            epsilon_m[m] = lambda_m_sw[m] / (lambda_m_sc[m] + lambda_m_sw[m] + 1e-10)
+            lambda_val = np.clip(lambda_val, 0.5, 10)
+
+        # Periodic reporting
+        if i % 100 == 0 and len(all_true) > 0:
+            print(f"Sample {i}: Acc={current_acc:.3f} | Models={len(base_models)} | λ={lambda_val:.2f}")
+
+    except Exception as e:
+        print(f"Error at sample {i}: {str(e)}")
+        continue
+
+# --- Final Evaluation ---
+if len(all_true) > 0:
+    final_acc = np.mean(np.array(all_pred) == np.array(all_true))
+    print(f"\nFinal Accuracy: {final_acc:.4f}")
+    print(f"Drift points: {drift_points}")
+
+    plt.figure(figsize=(12, 6))
+    plt.plot(cumulative_accuracy, label='Accuracy')
+    for pt in drift_points:
+        plt.axvline(pt, color='r', alpha=0.3)
+    plt.title("Online Learning Performance")
+    plt.xlabel("Labeled Samples Processed")
+    plt.ylabel("Accuracy")
+    plt.legend()
+    plt.grid()
+    plt.show()
+else:
+    print("No labeled samples available for evaluation")

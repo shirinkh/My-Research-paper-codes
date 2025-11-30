@@ -1,0 +1,133 @@
+
+**********************************************************
+ * 1 Milion data with various number of drifts *
+**********************************************************
+
+#SEA_Sudden
+ WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.SEAGenerator -f 1) -d (ConceptDriftStream -s (generators.SEAGenerator -f 2) 
+-d (ConceptDriftStream -s (generators.SEAGenerator -f 3) -d (generators.SEAGenerator -f 4) -p 750000 -w 50) -p 500000 -w 50) -p 250000 -w 50) 
+-f path\SEA_S.arff -m 1000000
+
+#SEA_Gradual
+WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.SEAGenerator -f 3) -d (generators.SEAGenerator -f 2) -p 500000 -w
+100000) -f path\SEA_G.arff -m 1000000
+
+#SEA_Gradual+Sudden
+WriteStreamToARFFFile -s (ConceptDriftStream -s generators.SEAGenerator -d (ConceptDriftStream -s generators.SEAGenerator -d 
+ (ConceptDriftStream -s (generators.SEAGenerator -f 3) -d generators.SEAGenerator -p 750000 -w 200000) -p 500000 -w 1) -p 250000 -w 200000) -f
+ path\SEA_GS.arff -m 1000000
+
+
+#############################################################################################################################################
+#Tree_Sudden
+ WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.RandomTreeGenerator -r 2)
+ -d (ConceptDriftStream -s (generators.RandomTreeGenerator -r 2) -d (ConceptDriftStream -s (generators.RandomTreeGenerator -r 3) 
+ -d (generators.RandomTreeGenerator -r 2) -p 750000 -w 1) -p 500000 -w 1) -p 250000 -w 1) -f path\Tree_S.arff -m 1000000
+
+#Tree_Gradual
+ WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.RandomTreeGenerator -r 2)
+ -d (ConceptDriftStream -s (generators.RandomTreeGenerator -r 2) -d (ConceptDriftStream -s (generators.RandomTreeGenerator -r 3) 
+ -d (generators.RandomTreeGenerator -r 2) -p 750000 -w 200000) -p 500000 -w 200000) -p 250000 -w 200000) -f path\Tree_G.arff -m 1000000
+
+#Tree_Gradual+Sudden
+WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.RandomTreeGenerator -r 2)
+ -d (ConceptDriftStream -s (generators.RandomTreeGenerator -r 2) -d (ConceptDriftStream -s (generators.RandomTreeGenerator -r 3) 
+ -d (generators.RandomTreeGenerator -r 2) -p 750000 -w 200000) -p 500000 -w 1) -p 250000 -w 200000) -f path\Tree_GS.arff -m 1000000
+
+#############################################################################################################################################
+#Hyp_Sudden
+ WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.HyperplaneGenerator -i 2)
+ -d (ConceptDriftStream -s (generators.HyperplaneGenerator -i 2) -d (ConceptDriftStream -s (generators.HyperplaneGenerator -i 4) 
+ -d generators.HyperplaneGenerator -p 750000 -w 1) -p 500000 -w 1) -p 250000 -w 1) -f path\Hyp_S.arff -m 1000000
+
+#Hyp_Gradual
+WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.HyperplaneGenerator -i 2)
+ -d (ConceptDriftStream -s (generators.HyperplaneGenerator -i 2) -d (ConceptDriftStream -s (generators.HyperplaneGenerator -i 4) 
+ -d generators.HyperplaneGenerator -p 750000 -w 100000) -p 500000 -w 100000) -p 250000 -w 100000) -f path\Hyp_G.arff -m 1000000
+
+#Hyp_Gradual+Sudden
+WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.HyperplaneGenerator -i 2)
+ -d (ConceptDriftStream -s (generators.HyperplaneGenerator -i 2) -d (ConceptDriftStream -s (generators.HyperplaneGenerator -i 4) 
+ -d generators.HyperplaneGenerator -p 750000 -w 100000) -p 500000 -w 1) -p 250000 -w 100000) -f path\Hyp_GS.arff -m 1000000
+
+#############################################################################################################################################
+#Wave_Sudden
+ WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.WaveformGeneratorDrift -d 6)
+ -d (ConceptDriftStream -s (generators.WaveformGeneratorDrift -d 4) -d (generators.WaveformGeneratorDrift -d 8) -p 500000 -w 1) -p 250000 
+ -w 1) -f path\Wave_S.arff -m 1000000
+
+#Wave_Gradual
+ WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.WaveformGeneratorDrift -d 6)
+ -d (ConceptDriftStream -s (generators.WaveformGeneratorDrift -d 4) -d (generators.WaveformGeneratorDrift -d 8) -p 500000 -w 100000) -p 250000 
+ -w 100000) -f path\Wave_G.arff -m 1000000
+
+#Wave_Gradual+Sudden
+WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.WaveformGeneratorDrift -d 2) -d 
+ (ConceptDriftStream -d (ConceptDriftStream -s (generators.WaveformGeneratorDrift -d 4) -d (ConceptDriftStream -s 
+ (generators.WaveformGeneratorDrift -d 6) -d generators.WaveformGeneratorDrift -p 750000 -w 100000) -p 500000 -w 1) -p 250000 -w 100000)) 
+ -f path\Wave_GS.arff -m 1000000
+
+#############################################################################################################################################
+#RBF_Sudden
+WriteStreamToARFFFile -s (ConceptDriftStream -s generators.RandomRBFGeneratorDrift -d 
+(ConceptDriftStream -s generators.RandomRBFGeneratorDrift -d (ConceptDriftStream -s generators.RandomRBFGeneratorDrift 
+-d generators.RandomRBFGeneratorDrift -p 750000 -w 1) -p 500000 -w 1) -p 250000 -w 1) -f path\RBF_S.arff -m 1000000
+
+#RBF_Gradual
+ WriteStreamToARFFFile -s (ConceptDriftStream -s generators.RandomRBFGeneratorDrift -d
+ (ConceptDriftStream -s generators.RandomRBFGeneratorDrift -d generators.RandomRBFGeneratorDrift -p 500000 -w 100000) -p 250000 -w 100000) 
+-f path\RBF_G.arff -m 1000000
+
+#RBF_Gradual+Sudden
+ WriteStreamToARFFFile -s (ConceptDriftStream -s generators.RandomRBFGeneratorDrift -d 
+(ConceptDriftStream -s generators.RandomRBFGeneratorDrift -d (ConceptDriftStream -s generators.RandomRBFGeneratorDrift 
+-d generators.RandomRBFGeneratorDrift -p 750000 -w 200000) -p 500000 -w 1) -p 250000 -w 200000) -f path\RBF_GS.arff -m 1000000
+
+#############################################################################################################################################
+#Agr_Sudden
+ WriteStreamToARFFFile -s (ConceptDriftStream -s generators.AgrawalGenerator -d (ConceptDriftStream -s (generators.AgrawalGenerator
+-f 2) -d (ConceptDriftStream -s generators.AgrawalGenerator -d (generators.AgrawalGenerator -f 4) -p 750000 -w 1) -p 500000 -w 1) -p 250000 -w 1)
+ -f path\Agg_S.arff -m 1000000
+
+#Agr_Gradual
+WriteStreamToARFFFile -s (ConceptDriftStream -s
+generators.AgrawalGenerator -d (ConceptDriftStream -s (generators.AgrawalGenerator
+-f 2) -d (ConceptDriftStream -s generators.AgrawalGenerator -d (generators.AgrawalGenerator
+-f 4) -p 750000 -w 100000) -p 500000 -w 100000) -p 250000 -w 100000)-f path\Agr_G.arff -m 1000000
+
+#Agr_Gradual+Sudden
+WriteStreamToARFFFile -s (ConceptDriftStream -s
+generators.AgrawalGenerator -d (ConceptDriftStream -s (generators.AgrawalGenerator
+-f 2) -d (ConceptDriftStream -s generators.AgrawalGenerator -d (generators.AgrawalGenerator
+-f 4) -p 750000 -w 100000) -p 500000 -w 1) -p 250000 -w 100000)-f path\Agr_GS.arff -m 1000000
+
+#############################################################################################################################################
+#Stag_Sudden
+ WriteStreamToARFFFile -s (ConceptDriftStream -s generators.STAGGERGenerator -d (ConceptDriftStream -s 
+ (generators.STAGGERGenerator -f 2) -d (ConceptDriftStream -s (generators.STAGGERGenerator -f 3) -d generators.STAGGERGenerator -p 750000 -w 1) 
+ -p 500000 -w 1) -p 250000 -w 1) -f C:\Users\ADMIN\Desktop\STAGGER_S.arff -m  1000000
+
+#Stag_Gradual
+ WriteStreamToARFFFile -s (ConceptDriftStream -s generators.STAGGERGenerator -d (ConceptDriftStream -s 
+ (generators.STAGGERGenerator -f 2) -d (ConceptDriftStream -s (generators.STAGGERGenerator -f 3) -d generators.STAGGERGenerator -p 750000 -w 100000)
+ -p 500000 -w 100000) -p 250000 -w 100000) -f C:\Users\ADMIN\Desktop\STAGGER_G.arff -m  1000000
+
+#Stag_Gradual+Sudden
+ WriteStreamToARFFFile -s (ConceptDriftStream -s generators.SEAGenerator -d (ConceptDriftStream -s generators.SEAGenerator -d 
+ (ConceptDriftStream -s (generators.SEAGenerator -f 3) -d generators.SEAGenerator -p 750000 -w 300000) -p 500000 -w 1) -p 250000 -w 300000) -f
+ path\SEA_GS.arff -m 1000000
+
+#############################################################################################################################################
+
+#LED_Sudden
+WriteStreamToARFFFile -s (ConceptDriftStream -s generators.LEDGeneratorDrift -d
+ (generators.LEDGeneratorDrift -d 3) -p 500000 -w 10) -f path\LED_S.arff -m 1000000
+
+#LED_Gradual
+WriteStreamToARFFFile -s (ConceptDriftStream -s generators.LEDGeneratorDrift -d
+ (generators.LEDGeneratorDrift -d 3) -p 500000 -w 150000) -f path\LED_G.arff -m 1000000
+
+#LED_Gradual+Sudden
+ WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.LEDGeneratorDrift -d 3) -d 
+ (ConceptDriftStream -s generators.LEDGeneratorDrift -d (ConceptDriftStream -s generators.LEDGeneratorDrift -d generators.LEDGeneratorDrift
+ -p 750000 -w 100000) -p 500000 -w 1) -a 90.0 -p 250000 -w 100000) -f path\LED_M.arff -m 1000000
