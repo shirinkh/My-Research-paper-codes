@@ -1,7 +1,38 @@
+📁 Dataset Generation Guide
 
-**********************************************************
- * 1 Milion data with various number of drifts *
-**********************************************************
+Prerequisites
+1- Install MOA (Massive Online Analysis)
+2- Java Runtime Environment (JRE) installed
+
+java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask "
+ـــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــ
+
+🔧 Setup Instructions
+
+1- Download MOA:
+https://sourceforge.net/projects/moa-datastream/files/latest/download
+
+2- Create datasets directory:
+mkdir datasets
+
+3- Run commands from MOA installation directory
+
+4- Convert ARFF to CSV (optional for our code):
+java -cp moa.jar weka.core.converters.CSVLoader ./datasets/SEA_S.arff > ./datasets/SEA_S.csv
+_______________________________________________________________________________________________
+
+🎯 Parameters Explanation
+
+Parameter	Description
+-f X	Feature function (1, 2, 3, 4 for different concepts)
+-p N	Position where drift occurs
+-w N	Width of drift transition (gradual drift)
+-m N	Maximum number of instances to generate
+-f path	Output file path
+___________________________________________________________________________________________________
+
+Generating Datasets:
+
 
 #SEA_Sudden
  WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.SEAGenerator -f 1) -d (ConceptDriftStream -s (generators.SEAGenerator -f 2) 
@@ -130,4 +161,6 @@ WriteStreamToARFFFile -s (ConceptDriftStream -s generators.LEDGeneratorDrift -d
 #LED_Gradual+Sudden
  WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.LEDGeneratorDrift -d 3) -d 
  (ConceptDriftStream -s generators.LEDGeneratorDrift -d (ConceptDriftStream -s generators.LEDGeneratorDrift -d generators.LEDGeneratorDrift
+
  -p 750000 -w 100000) -p 500000 -w 1) -a 90.0 -p 250000 -w 100000) -f path\LED_M.arff -m 1000000
+
