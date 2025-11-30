@@ -3,8 +3,6 @@
 Prerequisites
 1- Install MOA (Massive Online Analysis)
 2- Java Runtime Environment (JRE) installed
-
-java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask "
 ـــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــــ
 
 🔧 Setup Instructions
@@ -35,6 +33,8 @@ Generating Datasets:
 
 
 #SEA_Sudden
+java -cp moa.jar -javaagent:sizeofag-1.0.4.jar moa.DoTask "
+
  WriteStreamToARFFFile -s (ConceptDriftStream -s (generators.SEAGenerator -f 1) -d (ConceptDriftStream -s (generators.SEAGenerator -f 2) 
 -d (ConceptDriftStream -s (generators.SEAGenerator -f 3) -d (generators.SEAGenerator -f 4) -p 750000 -w 50) -p 500000 -w 50) -p 250000 -w 50) 
 -f path\SEA_S.arff -m 1000000
@@ -163,4 +163,5 @@ WriteStreamToARFFFile -s (ConceptDriftStream -s generators.LEDGeneratorDrift -d
  (ConceptDriftStream -s generators.LEDGeneratorDrift -d (ConceptDriftStream -s generators.LEDGeneratorDrift -d generators.LEDGeneratorDrift
 
  -p 750000 -w 100000) -p 500000 -w 1) -a 90.0 -p 250000 -w 100000) -f path\LED_M.arff -m 1000000
+
 
