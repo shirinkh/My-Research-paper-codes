@@ -62,7 +62,20 @@ python OSSB.py
 
 * Ensemble performance monitoring
 
-
-
 * Interactive accuracy plot with drift points marked
+  
+
+🎯 Parameter Configuration Guide
+Parameter	Description	Recommended Value
+W_size:‌  	Sliding window size	100-300
+M:      	Number of base models	5-15
+p_value_threshold:	Pseudo-label confidence	0.8-0.95
+label_percentage:	Available labels	0.05 (5%)-- 0.15 (15%)
+drift_delta:    	Drift sensitivity	0.001-0.01
+
+
+
+ 📞 Contact
+If you have any questions, please feel free to contact me:
+Email: sh.khezri@pnu.ac.ir, shirin.khezri@gmail.com
 
